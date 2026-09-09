@@ -32,6 +32,16 @@
       color: #1f2937;
       font-size: 1.3rem;
     }
+    .badge-id {
+      display: inline-block;
+      background: #e0e7ff;
+      color: #3730a3;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
     p {
       color: #4b5563;
       font-size: 0.95rem;
@@ -68,57 +78,55 @@
 </head>
 <body>
 
-  <!-- Mensagem de carregamento enquanto busca os dados -->
+  <!-- Mensagem inicial de carregamento -->
   <div id="status">Carregando...</div>
 
-  <!-- Formulário de ativação (só aparece se a placa for nova/virgem) -->
+  <!-- Formulário de ativação automática -->
   <div class="card" id="form-box" style="display: none;">
+    <span class="badge-id" id="placa-label">Placa</span>
     <h2>Ativar Plaquinha</h2>
-    <p>Cadastre o link de avaliação para esta placa.</p>
+    <p>Vincule o link de avaliação para esta placa física.</p>
     
-    <input type="password" id="senha" placeholder="Senha mestra (ex: 1234)">
+    <input type="password" id="senha" placeholder="Senha mestra (1234)">
     <input type="url" id="link" placeholder="Cole o link do Google Meu Negócio">
     
     <button onclick="ativarPlaca()">Vincular e Ativar</button>
   </div>
 
   <script>
-    // -------------------------------------------------------------
-    // ATENÇÃO: Substitua pelos seus dados reais do Supabase abaixo!
-    // -------------------------------------------------------------
     const SUPABASE_URL = 'https://gkchkzzaibcdosofyfqc.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdrY2hrenphaWJjZG9zb2Z5ZnFjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4ODk0ODgsImV4cCI6MjEwNDQ2NTQ4OH0.9sDK1nePRca_T6snNoQQQGI23yCdvEoMEYIhpw_Jg48';
-    // -------------------------------------------------------------
 
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // Pega o ID que está na URL (exemplo: ?id=001)
+    // Senha mestra única para ativar qualquer uma das 1000 placas
+    const SENHA_MESTRA_PADRAO = '1234';
+
+    // Captura o ID da URL (ex: ?id=002, ?id=500, ?id=1000)
     const params = new URLSearchParams(window.location.search);
     const placaId = params.get('id');
 
     async function checarPlaca() {
       if (!placaId) {
-        document.getElementById('status').innerText = "ID da plaquinha não identificado.";
+        document.getElementById('status').innerText = "ID da plaquinha não identificado na URL.";
         return;
       }
 
-      // Busca a linha correspondente no Supabase
+      // Mostra o ID que está sendo ativado no topo do card
+      document.getElementById('placa-label').innerText = `Placa ID: ${placaId}`;
+
+      // Consulta no Supabase se esse ID já existe
       const { data, error } = await _supabase
         .from('placas')
         .select('*')
         .eq('id', placaId)
-        .single();
+        .maybeSingle();
 
-      if (error || !data) {
-        document.getElementById('status').innerText = "Plaquinha não encontrada no sistema.";
-        return;
-      }
-
-      // SE JÁ TIVER LINK: Redireciona na hora para o Google
-      if (data.link_google && data.link_google.trim() !== '') {
+      // Se a placa já estiver cadastrada e com link salvo -> Pula direto pro Google
+      if (data && data.link_google && data.link_google.trim() !== '') {
         window.location.href = data.link_google;
       } else {
-        // SE FOR VIRGEM: Mostra o formulário para você cadastrar o link
+        // Se a placa for nova ou estiver com link em branco -> Abre a tela de ativação
         document.getElementById('status').style.display = 'none';
         document.getElementById('form-box').style.display = 'block';
       }
@@ -133,28 +141,26 @@
         return;
       }
 
-      // Valida a senha cadastrada no banco
-      const { data } = await _supabase
-        .from('placas')
-        .select('senha')
-        .eq('id', placaId)
-        .single();
-
-      if (data && data.senha === senhaInformada) {
-        // Salva o link do Google na linha da placa
-        const { error } = await _supabase
-          .from('placas')
-          .update({ link_google: linkInformado })
-          .eq('id', placaId);
-
-        if (!error) {
-          alert('Plaquinha ativada com sucesso! Redirecionando...');
-          window.location.href = linkInformado;
-        } else {
-          alert('Erro ao salvar no banco de dados.');
-        }
-      } else {
+      // Validação da senha mestra
+      if (senhaInformada !== SENHA_MESTRA_PADRAO) {
         alert('Senha incorreta!');
+        return;
+      }
+
+      // O comando upsert cria a linha automaticamente no Supabase caso ela ainda não exista
+      const { error } = await _supabase
+        .from('placas')
+        .upsert({
+          id: placaId,
+          link_google: linkInformado,
+          senha: SENHA_MESTRA_PADRAO
+        });
+
+      if (!error) {
+        alert(`Placa ${placaId} ativada com sucesso! Redirecionando...`);
+        window.location.href = linkInformado;
+      } else {
+        alert('Erro ao salvar no banco de dados.');
       }
     }
 
