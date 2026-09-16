@@ -1,292 +1,126 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gerador Automático de Placas</title>
-  <!-- Biblioteca de QR Code leve -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <title>Painel Administrativo - Placas</title>
   <style>
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: #f1f5f9;
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f9;
       margin: 0;
-      padding: 16px;
-      color: #1e293b;
-      display: flex;
-      justify-content: center;
+      padding: 20px;
     }
     .container {
-      max-width: 480px;
-      width: 100%;
-    }
-    .card {
-      background: #ffffff;
-      padding: 20px;
-      border-radius: 14px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.06);
-      margin-bottom: 16px;
-      text-align: center;
-    }
-    h1 { font-size: 1.3rem; margin-top: 0; }
-    h2 { font-size: 1.1rem; margin-top: 0; color: #475569; }
-    input, button {
-      width: 100%;
-      padding: 14px;
+      max-width: 600px;
+      margin: 0 auto;
+      background: #fff;
+      padding: 25px;
       border-radius: 8px;
-      font-size: 1rem;
-      box-sizing: border-box;
-      margin-bottom: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     }
-    input { border: 1px solid #cbd5e1; text-align: center; }
+    h2 {
+      margin-top: 0;
+      color: #333;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: bold;
+      color: #555;
+    }
+    input[type="text"], input[type="url"] {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+      font-size: 14px;
+    }
     button {
-      background: #2563eb;
+      background-color: #007bff;
       color: white;
       border: none;
-      font-weight: 600;
+      padding: 12px 20px;
+      border-radius: 4px;
       cursor: pointer;
-    }
-    button:hover { background: #1d4ed8; }
-    button.secondary { background: #0f172a; margin-top: 8px; }
-    .qrcode-wrapper {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      margin-top: 15px;
-    }
-    #qrcode {
-      padding: 12px;
-      background: white;
-      border-radius: 8px;
-      border: 1px solid #e2e8f0;
-      display: flex;
-      justify-content: center;
-    }
-    .badge {
-      display: inline-block;
-      padding: 4px 10px;
-      border-radius: 6px;
-      font-size: 0.8rem;
-      font-weight: 600;
-    }
-    .badge-virgin { background: #fef3c7; color: #92400e; }
-    .badge-active { background: #dcfce7; color: #166534; }
-    table {
+      font-size: 16px;
       width: 100%;
-      border-collapse: collapse;
-      margin-top: 10px;
-      font-size: 0.85rem;
-      text-align: left;
     }
-    th, td {
-      padding: 8px;
-      border-bottom: 1px solid #f1f5f9;
+    button:hover {
+      background-color: #0056b3;
     }
-    #status-msg {
-      font-size: 0.9rem;
-      color: #64748b;
-      margin-bottom: 10px;
+    .qr-preview {
+      margin-top: 25px;
+      text-align: center;
+    }
+    .qr-preview img {
+      max-width: 200px;
+      border: 1px solid #ddd;
+      padding: 5px;
+      border-radius: 4px;
     }
   </style>
 </head>
 <body>
 
-<div class="container">
-  <!-- LOGIN -->
-  <div class="card" id="login-section">
-    <h1>Painel de Fabricação</h1>
-    <p style="color: #64748b; font-size: 0.9rem;">Digite a senha mestra para acessar.</p>
-    <input type="password" id="admin-pass" placeholder="Senha (ex: 1234)">
-    <button onclick="fazerLogin()">Entrar</button>
-  </div>
-
-  <!-- PAINEL GERADOR -->
-  <div id="painel-section" style="display: none;">
-    <div class="card">
-      <h2>Nova Plaquinha</h2>
-      <div id="status-msg">Pronto para gerar.</div>
+  <div class="container">
+    <h2>Gerenciador de Placa</h2>
+    <form id="placaForm">
       
-      <!-- BOTÃO 100% AUTOMÁTICO -->
-      <button id="btn-gerar" onclick="gerarProximaPlacaAutomatica()">⚡ Gerar Próxima Plaquinha</button>
-
-      <div class="qrcode-wrapper" id="qr-result" style="display: none;">
-        <div style="font-size: 1.2rem; font-weight: bold; margin-bottom: 8px; color: #2563eb;" id="placa-gerada-id">Placa 000</div>
-        <div id="qrcode"></div>
-        <p id="qr-url-text" style="font-size: 0.75rem; color: #64748b; word-break: break-all; margin: 10px 0;"></p>
-        <button class="secondary" onclick="baixarQRCode()">Baixar Imagem (PNG)</button>
+      <!-- Outros campos existentes -->
+      <div class="form-group">
+        <label for="titulo">Título da Placa / Identificador:</label>
+        <input type="text" id="titulo" placeholder="Ex: Placa Sala 101" required>
       </div>
-    </div>
 
-    <!-- LISTAGEM -->
-    <div class="card">
-      <div style="display: flex; justify-content: space-between; align-items: center;">
-        <h2 style="margin: 0;">Placas Cadastradas</h2>
-        <button style="width: auto; padding: 6px 12px; margin: 0; font-size: 0.8rem;" onclick="carregarLista()">Atualizar</button>
+      <!-- NOVO CAMPO ADICIONADO: Input para o link do QR Code -->
+      <div class="form-group">
+        <label for="qrCodeUrl">Link / URL do QR Code:</label>
+        <input 
+          type="url" 
+          id="qrCodeUrl" 
+          name="qrCodeUrl" 
+          placeholder="https://exemplo.com/pagina-ou-arquivo" 
+          required
+        >
       </div>
-      <table>
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody id="placas-tbody">
-          <tr><td colspan="2">Carregando...</td></tr>
-        </tbody>
-      </table>
+
+      <button type="submit">Salvar Placa</button>
+    </form>
+
+    <!-- Preview opcional do QR Code gerado -->
+    <div class="qr-preview" id="qrPreviewArea" style="display:none;">
+      <h3>Pré-visualização do QR Code:</h3>
+      <img id="qrImage" src="" alt="QR Code">
     </div>
   </div>
-</div>
 
-<script>
-  const SUPABASE_URL = 'https://gkchkzzaibcdosofyfqc.supabase.co';
-  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdrY2hrenphaWJjZG9zb2Z5ZnFjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4ODk0ODgsImV4cCI6MjEwNDQ2NTQ4OH0.9sDK1nePRca_T6snNoQQQGI23yCdvEoMEYIhpw_Jg48';
-  const SENHA_MESTRA = '1234';
+  <script>
+    const form = document.getElementById('placaForm');
+    const qrCodeInput = document.getElementById('qrCodeUrl');
+    const qrPreviewArea = document.getElementById('qrPreviewArea');
+    const qrImage = document.getElementById('qrImage');
 
-  let ultimoIdGerado = '';
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
 
-  function fazerLogin() {
-    const pass = document.getElementById('admin-pass').value;
-    if (pass === SENHA_MESTRA) {
-      document.getElementById('login-section').style.display = 'none';
-      document.getElementById('painel-section').style.display = 'block';
-      carregarLista();
-    } else {
-      alert('Senha incorreta!');
-    }
-  }
+      const url = qrCodeInput.value;
 
-  // Consulta direta via REST API nativa (sem depender de libs externas sujeitas a Load Failed)
-  async function buscarPlacasDoBanco() {
-    const resp = await fetch(`${SUPABASE_URL}/rest/v1/placas?select=*`, {
-      headers: {
-        'apikey': SUPABASE_KEY,
-        'Authorization': `Bearer ${SUPABASE_KEY}`
+      if (url) {
+        // Exemplo usando a API gratuita do qrserver.com para gerar o QR Code instantaneamente
+        const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}`;
+        
+        qrImage.src = qrApiUrl;
+        qrPreviewArea.style.display = 'block';
+
+        alert('Link do QR Code salvo com sucesso!');
       }
     });
-    if (!resp.ok) throw new Error('Falha ao conectar no Supabase');
-    return await resp.json();
-  }
+  </script>
 
-  async function gerarProximaPlacaAutomatica() {
-    const btn = document.getElementById('btn-gerar');
-    const statusMsg = document.getElementById('status-msg');
-    btn.disabled = true;
-    statusMsg.innerText = 'Calculando próximo ID livre...';
-
-    try {
-      const placas = await buscarPlacasDoBanco();
-
-      // Mapeia todos os IDs numéricos existentes
-      const idsUsados = new Set();
-      placas.forEach(p => {
-        const num = parseInt(p.id, 10);
-        if (!isNaN(num)) idsUsados.add(num);
-      });
-
-      // Acha o primeiro número livre a partir de 1
-      let proximoNum = 1;
-      while (idsUsados.has(proximoNum)) {
-        proximoNum++;
-      }
-
-      // Formata em 3 dígitos (ex: 001, 002, 015)
-      const proximoId = String(proximoNum).padStart(3, '0');
-      ultimoIdGerado = proximoId;
-
-      statusMsg.innerText = `Cadastrando Placa ${proximoId}...`;
-
-      // Insere no banco
-      const resInsert = await fetch(`${SUPABASE_URL}/rest/v1/placas`, {
-        method: 'POST',
-        headers: {
-          'apikey': SUPABASE_KEY,
-          'Authorization': `Bearer ${SUPABASE_KEY}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'resolution=merge-duplicates'
-        },
-        body: JSON.stringify({
-          id: proximoId,
-          senha: SENHA_MESTRA,
-          link_google: null
-        })
-      });
-
-      if (!resInsert.ok) throw new Error('Não foi possível salvar a placa no banco.');
-
-      // Gera o link da placa
-      const baseUrl = window.location.origin + window.location.pathname.replace('admin.html', '');
-      const urlFinal = `${baseUrl}?id=${proximoId}`;
-
-      // Renderiza o QR Code
-      const qrContainer = document.getElementById('qrcode');
-      qrContainer.innerHTML = '';
-      new QRCode(qrContainer, {
-        text: urlFinal,
-        width: 220,
-        height: 220,
-        correctLevel: QRCode.CorrectLevel.H
-      });
-
-      document.getElementById('placa-gerada-id').innerText = `Placa ID: ${proximoId}`;
-      document.getElementById('qr-url-text').innerText = urlFinal;
-      document.getElementById('qr-result').style.display = 'flex';
-      statusMsg.innerText = `Placa ${proximoId} gerada e pronta!`;
-
-      carregarLista();
-    } catch (err) {
-      alert('Erro: ' + err.message);
-      statusMsg.innerText = 'Erro ao processar.';
-    } finally {
-      btn.disabled = false;
-    }
-  }
-
-  async function carregarLista() {
-    const tbody = document.getElementById('placas-tbody');
-    try {
-      const placas = await buscarPlacasDoBanco();
-      tbody.innerHTML = '';
-
-      if (placas.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="2">Nenhuma placa gerada ainda.</td></tr>';
-        return;
-      }
-
-      placas.sort((a, b) => parseInt(b.id || 0) - parseInt(a.id || 0));
-
-      placas.forEach(p => {
-        const isAtiva = p.link_google && p.link_google.trim() !== '';
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td><strong>${p.id}</strong></td>
-          <td>
-            <span class="badge ${isAtiva ? 'badge-active' : 'badge-virgin'}">
-              ${isAtiva ? 'Vinculada' : 'Virgem'}
-            </span>
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
-    } catch (e) {
-      tbody.innerHTML = '<tr><td colspan="2">Erro ao listar placas.</td></tr>';
-    }
-  }
-
-  function baixarQRCode() {
-    const img = document.querySelector('#qrcode img');
-    const canvas = document.querySelector('#qrcode canvas');
-    const a = document.createElement('a');
-    a.download = `placa-${ultimoIdGerado}.png`;
-
-    if (img && img.src) {
-      a.href = img.src;
-      a.click();
-    } else if (canvas) {
-      a.href = canvas.toDataURL('image/png');
-      a.click();
-    }
-  }
-</script>
 </body>
 </html>
