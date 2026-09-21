@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Avaliação</title>
+  <!-- Biblioteca oficial do Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #f3f4f6;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 16px;
+      box-sizing: border-box;
+    }
+    .card {
+      background: #ffffff;
+      padding: 28px;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+      max-width: 380px;
+      width: 100%;
+      text-align: center;
+    }
+    h2 {
+      margin-top: 0;
+      color: #1f2937;
+      font-size: 1.3rem;
+    }
+    p {
+      color: #4b5563;
+      font-size: 0.95rem;
+      margin-bottom: 20px;
+    }
+    input {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      box-sizing: border-box;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      background-color: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #1d4ed8;
+    }
+    #status {
+      font-size: 1.1rem;
+      color: #4b5563;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Mensagem de carregamento enquanto busca os dados -->
+  <div id="status">Carregando...</div>
+
+  <!-- Formulário de ativação (só aparece se a placa for nova/virgem) -->
+  <div class="card" id="form-box" style="display: none;">
+    <h2>Ativar Plaquinha</h2>
+    <p>Cadastre o link de avaliação para esta placa.</p>
+    
+    <input type="password" id="senha" placeholder="Senha mestra (ex: 1234)">
+    <input type="url" id="link" placeholder="Cole o link do Google Meu Negócio">
+    
+    <button onclick="ativarPlaca()">Vincular e Ativar</button>
+  </div>
+
+  <script>
+    // -------------------------------------------------------------
+    // ATENÇÃO: Substitua pelos seus dados reais do Supabase abaixo!
+    // -------------------------------------------------------------
+    const SUPABASE_URL = 'SUA_PROJECT_URL_AQUI';
+    const SUPABASE_KEY = 'SUA_ANON_KEY_AQUI';
+    // -------------------------------------------------------------
+
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // Pega o ID que está na URL (exemplo: ?id=001)
+    const params = new URLSearchParams(window.location.search);
+    const placaId = params.get('id');
+
+    async function checarPlaca() {
+      if (!placaId) {
+        document.getElementById('status').innerText = "ID da plaquinha não identificado.";
+        return;
+      }
+
+      // Busca a linha correspondente no Supabase
+      const { data, error } = await _supabase
+        .from('placas')
+        .select('*')
+        .eq('id', placaId)
+        .single();
+
+      if (error || !data) {
+        document.getElementById('status').innerText = "Plaquinha não encontrada no sistema.";
+        return;
+      }
+
+      // SE JÁ TIVER LINK: Redireciona na hora para o Google
+      if (data.link_google && data.link_google.trim() !== '') {
+        window.location.href = data.link_google;
+      } else {
+        // SE FOR VIRGEM: Mostra o formulário para você cadastrar o link
+        document.getElementById('status').style.display = 'none';
+        document.getElementById('form-box').style.display = 'block';
+      }
+    }
+
+    async function ativarPlaca() {
+      const senhaInformada = document.getElementById('senha').value;
+      const linkInformado = document.getElementById('link').value;
+
+      if (!senhaInformada || !linkInformado) {
+        alert('Por favor, preencha a senha e o link!');
+        return;
+      }
+
+      // Valida a senha cadastrada no banco
+      const { data } = await _supabase
+        .from('placas')
+        .select('senha')
+        .eq('id', placaId)
+        .single();
+
+      if (data && data.senha === senhaInformada) {
+        // Salva o link do Google na linha da placa
+        const { error } = await _supabase
+          .from('placas')
+          .update({ link_google: linkInformado })
+          .eq('id', placaId);
+
+        if (!error) {
+          alert('Plaquinha ativada com sucesso! Redirecionando...');
+          window.location.href = linkInformado;
+        } else {
+          alert('Erro ao salvar no banco de dados.');
+        }
+      } else {
+        alert('Senha incorreta!');
+      }
+    }
+
+    checarPlaca();
+  </script>
+</body>
+</html>
